@@ -21,8 +21,16 @@ import { Roles } from "../common/decorators/roles.decorator";
 import { PaginationQueryDto } from "../common/dto/pagination.dto";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
-import { BlogService } from "./blog.service";
+import { BlogService, BlogStatusFilter } from "./blog.service";
 import { CreateBlogPostDto, UpdateBlogPostDto } from "./dto/blog.dto";
+
+/** Unknown values fall back to "no filter" so a stale link never breaks the list. */
+function normalizeStatus(value?: string): BlogStatusFilter | undefined {
+  const normalized = value?.trim().toUpperCase();
+  return normalized === "PUBLISHED" || normalized === "DRAFT"
+    ? normalized
+    : undefined;
+}
 
 @ApiTags("admin-blog")
 @ApiCookieAuth("accessToken")
@@ -35,9 +43,26 @@ export class AdminBlogController {
   @Get()
   @ApiOperation({
     summary: "List all blog posts, including drafts (admin only)",
+    description:
+      "`status=PUBLISHED|DRAFT` filters the list — omitted returns every post.",
   })
-  list(@Query() pagination: PaginationQueryDto) {
-    return this.blogService.listAll(pagination.page, pagination.limit);
+  list(
+    @Query() pagination: PaginationQueryDto,
+    @Query("status") status?: string,
+  ) {
+    return this.blogService.listAll(
+      pagination.page,
+      pagination.limit,
+      normalizeStatus(status),
+    );
+  }
+
+  @Get(":id")
+  @ApiOperation({
+    summary: "Get one blog post by id, drafts included (admin only)",
+  })
+  findOne(@Param("id") id: string) {
+    return this.blogService.findById(id);
   }
 
   @Post()

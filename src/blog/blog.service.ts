@@ -5,6 +5,9 @@ import { slugify } from "../common/utils/slug";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateBlogPostDto, UpdateBlogPostDto } from "./dto/blog.dto";
 
+/** Admin list filter — the frontend's «همه / منتشر شده / پیش‌نویس» tabs. */
+export type BlogStatusFilter = "PUBLISHED" | "DRAFT";
+
 export interface BlogPostDto {
   id: string;
   authorId: string;
@@ -86,8 +89,30 @@ export class BlogService {
 
   // --- admin ----------------------------------------------------------------
 
-  async listAll(page: number, limit: number): Promise<Paginated<BlogPostDto>> {
-    return this.paginate({}, page, limit, [{ createdAt: "desc" }]);
+  async listAll(
+    page: number,
+    limit: number,
+    status?: BlogStatusFilter,
+  ): Promise<Paginated<BlogPostDto>> {
+    const where: Prisma.BlogPostWhereInput =
+      status === "PUBLISHED"
+        ? { isPublished: true }
+        : status === "DRAFT"
+          ? { isPublished: false }
+          : {};
+    return this.paginate(where, page, limit, [{ createdAt: "desc" }]);
+  }
+
+  /** Admin lookup by id — drafts included, unlike the public slug lookup. */
+  async findById(id: string): Promise<BlogPostDto> {
+    const post = await this.prisma.blogPost.findUnique({
+      where: { id },
+      include: BLOG_INCLUDE,
+    });
+    if (!post) {
+      throw new NotFoundException("مقاله یافت نشد");
+    }
+    return toBlogPostDto(post);
   }
 
   async create(authorId: string, dto: CreateBlogPostDto): Promise<BlogPostDto> {
