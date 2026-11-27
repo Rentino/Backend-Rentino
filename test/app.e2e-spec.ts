@@ -490,4 +490,146 @@ describe("LensLoop API (e2e)", () => {
     expect(res.body.data.totalUsers).toBeGreaterThanOrEqual(3);
     expect(Array.isArray(res.body.data.ordersByStatus)).toBe(true);
   });
+
+  // -------------------------------------------------------------------------
+  // Blog (admin authoring + public reads)
+  // -------------------------------------------------------------------------
+
+  let draftId: string;
+  let publishedId: string;
+
+  it("keeps blog authoring away from non-admins", async () => {
+    await customer.get(`/${API_PREFIX}/admin/blog`).expect(403);
+    await provider.get(`/${API_PREFIX}/admin/blog`).expect(403);
+  });
+
+  it("creates a draft post that stays off the public blog", async () => {
+    const admin = request.agent(app.getHttpServer());
+    await admin
+      .post(`/${API_PREFIX}/auth/login`)
+      .send({ email: "admin-e2e@rentino.ir", password: "Password1" })
+      .expect(200);
+
+    const res = await admin
+      .post(`/${API_PREFIX}/admin/blog`)
+      .send({
+        title: "راهنمای تست وبلاگ",
+        excerpt: "خلاصه‌ای برای آزمون یکپارچه وبلاگ.",
+        content: "متن کامل مقاله آزمون که باید بیش از بیست کاراکتر باشد.",
+        category: "راهنما",
+      })
+      .expect(201);
+
+    expect(res.body.data.isPublished).toBe(false);
+    expect(res.body.data.slug).toBeTruthy();
+    draftId = res.body.data.id;
+
+    // Drafts are authorable but invisible on the public endpoints.
+    await request(app.getHttpServer())
+      .get(`/${API_PREFIX}/blog/${res.body.data.slug}`)
+      .expect(404);
+
+    const publicList = await request(app.getHttpServer())
+      .get(`/${API_PREFIX}/blog`)
+      .expect(200);
+    expect(
+      publicList.body.data.some((post: { id: string }) => post.id === draftId),
+    ).toBe(false);
+  });
+
+  it("finds a draft by id for the admin editor", async () => {
+    const admin = request.agent(app.getHttpServer());
+    await admin
+      .post(`/${API_PREFIX}/auth/login`)
+      .send({ email: "admin-e2e@rentino.ir", password: "Password1" })
+      .expect(200);
+
+    // The admin edit screen loads `/admin/blog/:id` for drafts too.
+    const res = await admin
+      .get(`/${API_PREFIX}/admin/blog/${draftId}`)
+      .expect(200);
+    expect(res.body.data.id).toBe(draftId);
+    expect(res.body.data.content).toContain("متن کامل مقاله");
+  });
+
+  it("hides an unknown blog post id from the admin editor", async () => {
+    const admin = request.agent(app.getHttpServer());
+    await admin
+      .post(`/${API_PREFIX}/auth/login`)
+      .send({ email: "admin-e2e@rentino.ir", password: "Password1" })
+      .expect(200);
+
+    await admin
+      .get(`/${API_PREFIX}/admin/blog/00000000-0000-4000-8000-000000000000`)
+      .expect(404);
+  });
+
+  it("filters the admin blog list by publish status", async () => {
+    const admin = request.agent(app.getHttpServer());
+    await admin
+      .post(`/${API_PREFIX}/auth/login`)
+      .send({ email: "admin-e2e@rentino.ir", password: "Password1" })
+      .expect(200);
+
+    // Publish the draft so one post exists in each bucket.
+    const published = await admin
+      .patch(`/${API_PREFIX}/admin/blog/${draftId}/publish`)
+      .expect(200);
+    expect(published.body.data.isPublished).toBe(true);
+    expect(published.body.data.publishedAt).toBeTruthy();
+    publishedId = draftId;
+
+    const drafts = await admin
+      .get(`/${API_PREFIX}/admin/blog?status=DRAFT`)
+      .expect(200);
+    expect(
+      drafts.body.data.some((post: { id: string }) => post.id === publishedId),
+    ).toBe(false);
+
+    const publishedOnly = await admin
+      .get(`/${API_PREFIX}/admin/blog?status=PUBLISHED`)
+      .expect(200);
+    expect(
+      publishedOnly.body.data.some(
+        (post: { id: string }) => post.id === publishedId,
+      ),
+    ).toBe(true);
+
+    // An unknown status must not break the list — it means "no filter".
+    const all = await admin.get(`/${API_PREFIX}/admin/blog`).expect(200);
+    const unknown = await admin
+      .get(`/${API_PREFIX}/admin/blog?status=SOMETHING`)
+      .expect(200);
+    expect(unknown.body.meta.total).toBe(all.body.meta.total);
+  });
+
+  it("exposes a published post on the public blog", async () => {
+    const list = await request(app.getHttpServer())
+      .get(`/${API_PREFIX}/blog`)
+      .expect(200);
+    const post = list.body.data.find(
+      (entry: { id: string }) => entry.id === publishedId,
+    );
+    expect(post).toBeDefined();
+
+    const detail = await request(app.getHttpServer())
+      .get(`/${API_PREFIX}/blog/${post.slug}`)
+      .expect(200);
+    expect(detail.body.data.title).toBe("راهنمای تست وبلاگ");
+    expect(detail.body.data.isPublished).toBe(true);
+  });
+
+  it("returns a published post to draft when unpublished", async () => {
+    const admin = request.agent(app.getHttpServer());
+    await admin
+      .post(`/${API_PREFIX}/auth/login`)
+      .send({ email: "admin-e2e@rentino.ir", password: "Password1" })
+      .expect(200);
+
+    const res = await admin
+      .patch(`/${API_PREFIX}/admin/blog/${publishedId}/unpublish`)
+      .expect(200);
+    expect(res.body.data.isPublished).toBe(false);
+    expect(res.body.data.publishedAt).toBeNull();
+  });
 });
