@@ -74,12 +74,6 @@ const USERS: SeedUser[] = [
 
 const CATEGORIES = [
   {
-    slug: "cars",
-    name: "خودرو",
-    icon: "cars",
-    description: "خودروهای سواری برای سفر، کار و استفاده روزانه",
-  },
-  {
     slug: "consoles",
     name: "کنسول بازی",
     icon: "consoles",
@@ -140,7 +134,7 @@ const GEAR: SeedGear[] = [
   {
     slug: "pride-131-1400",
     name: "پراید ۱۳۱ مدل ۱۴۰۰",
-    categorySlug: "cars",
+    categorySlug: "sports",
     providerEmail: "provider@rentino.ir",
     brand: "سایپا",
     description:
@@ -161,7 +155,7 @@ const GEAR: SeedGear[] = [
   {
     slug: "peugeot-206-tip2",
     name: "پژو ۲۰۷ مدل ۱۳۹۶",
-    categorySlug: "cars",
+    categorySlug: "laptops",
     providerEmail: "provider@rentino.ir",
     brand: "ایران‌خودرو",
     description:
@@ -181,7 +175,7 @@ const GEAR: SeedGear[] = [
   {
     slug: "samand-lx",
     name: "سمند LX دوگانه‌سوز",
-    categorySlug: "cars",
+    categorySlug: "sports",
     providerEmail: "provider@rentino.ir",
     brand: "ایران‌خودرو",
     description:

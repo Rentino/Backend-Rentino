@@ -3,6 +3,8 @@ import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
+import express from "express";
+import { join } from "path";
 import { AppModule } from "./app.module";
 import { API_PREFIX, ACCESS_COOKIE } from "./common/constants";
 import { validationExceptionFactory } from "./common/pipes/validation-exception.factory";
@@ -16,6 +18,9 @@ async function bootstrap(): Promise<void> {
   // don't need to know the API version.
   app.setGlobalPrefix(API_PREFIX, { exclude: ["health"] });
   app.use(cookieParser());
+
+  // Local gear image uploads are served from /uploads (#47, #52).
+  app.use("/uploads", express.static(join(process.cwd(), "uploads")));
 
   // The frontend (Next.js) calls the API with `credentials: "include"`, so the
   // browser needs an explicit origin + credentials on the CORS response.

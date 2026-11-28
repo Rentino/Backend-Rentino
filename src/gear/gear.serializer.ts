@@ -15,6 +15,8 @@ export interface GearDto {
   stock: number;
   availableStock: number;
   specifications: Record<string, string>;
+  availability: "AVAILABLE" | "UNAVAILABLE" | "MAINTENANCE";
+  unavailableReason: string | null;
   isActive: boolean;
   avgRating: number;
   reviewCount: number;
@@ -79,6 +81,8 @@ export function toGearDto(
     stock: gear.stock,
     availableStock: gear.availableStock,
     specifications: toSpecifications(gear.specifications),
+    availability: gear.availability,
+    unavailableReason: gear.unavailableReason ?? null,
     isActive: gear.isActive,
     avgRating: gear.avgRating,
     reviewCount: gear.reviewCount,

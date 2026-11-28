@@ -41,6 +41,15 @@ enum PaymentStatus {
   FAILED
 }
 
+// Provider-controlled listing state. `UNAVAILABLE` hides the listing from the
+// public catalog and blocks new bookings; `MAINTENANCE` stays visible but is
+// not bookable. `isActive` remains the admin/archive flag.
+enum GearAvailability {
+  AVAILABLE
+  UNAVAILABLE
+  MAINTENANCE
+}
+
 // ---------------------------------------------------------------------------
 // Users & auth
 // ---------------------------------------------------------------------------
@@ -109,6 +118,8 @@ model GearItem {
   stock          Int      @default(1)
   availableStock Int      @default(1)
   specifications Json     @default("{}") // Record<string,string>, category-specific
+  availability   GearAvailability @default(AVAILABLE)
+  unavailableReason String?
   isActive       Boolean  @default(true)
   avgRating      Float    @default(0)
   reviewCount    Int      @default(0)

@@ -14,6 +14,7 @@ import { PaymentsModule } from "./payments/payments.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { RentalsModule } from "./rentals/rentals.module";
 import { ReviewsModule } from "./reviews/reviews.module";
+import { UploadsModule } from "./uploads/uploads.module";
 import { UsersModule } from "./users/users.module";
 
 @Module({
@@ -32,6 +33,7 @@ import { UsersModule } from "./users/users.module";
     PrismaModule,
     AuthModule,
     UsersModule,
+    UploadsModule,
     CategoriesModule,
     GearModule,
     RentalsModule,

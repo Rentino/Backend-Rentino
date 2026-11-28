@@ -4,13 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { GearAvailability, Prisma } from "@prisma/client";
 import { Paginated, buildMeta } from "../common/interfaces/paginated";
 import { isUuid } from "../common/utils/uuid";
 import { jsonValueToString } from "../common/utils/json";
 import { slugify } from "../common/utils/slug";
 import { PrismaService } from "../prisma/prisma.service";
 import { toReviewDto, ReviewDto } from "../reviews/review.serializer";
+import { ALLOWED_SPEC_KEYS, ALL_SPEC_KEYS } from "./dto/spec-keys";
 import {
   AdminUpdateGearDto,
   CreateGearDto,
@@ -80,7 +81,11 @@ export class GearService {
       include: GEAR_INCLUDE,
     });
 
-    if (!gear || !gear.isActive) {
+    if (
+      !gear ||
+      !gear.isActive ||
+      gear.availability === GearAvailability.UNAVAILABLE
+    ) {
       throw new NotFoundException("کالا یافت نشد");
     }
 
@@ -122,7 +127,10 @@ export class GearService {
   }
 
   async create(providerId: string, dto: CreateGearDto): Promise<GearDto> {
-    await this.assertCategoryExists(dto.categoryId);
+    const category = await this.assertCategoryExists(dto.categoryId);
+    if (dto.specifications) {
+      this.assertSpecificationsAllowed(dto.specifications, category.slug);
+    }
 
     const slug = await this.uniqueSlug(slugify(dto.name, "listing"));
 
@@ -139,6 +147,7 @@ export class GearService {
         stock: dto.stock,
         availableStock: dto.stock,
         specifications: normalizeSpecifications(dto.specifications) ?? {},
+        availability: GearAvailability.AVAILABLE,
         isActive: true,
       },
       include: GEAR_INCLUDE,
@@ -154,8 +163,21 @@ export class GearService {
   ): Promise<GearDto> {
     const existing = await this.loadOwned(providerId, id);
 
+    let categorySlug: string | undefined;
     if (dto.categoryId !== undefined) {
-      await this.assertCategoryExists(dto.categoryId);
+      const category = await this.assertCategoryExists(dto.categoryId);
+      categorySlug = category.slug;
+    } else {
+      categorySlug = (
+        await this.prisma.category.findUnique({
+          where: { id: existing.categoryId },
+          select: { slug: true },
+        })
+      )?.slug;
+    }
+
+    if (dto.specifications) {
+      this.assertSpecificationsAllowed(dto.specifications, categorySlug);
     }
 
     const data: Prisma.GearItemUpdateInput = {};
@@ -176,6 +198,14 @@ export class GearService {
       const delta = dto.stock - existing.stock;
       data.stock = dto.stock;
       data.availableStock = Math.max(0, existing.availableStock + delta);
+    }
+    if (dto.availability !== undefined) {
+      data.availability = dto.availability;
+      if (dto.availability === "AVAILABLE") {
+        data.unavailableReason = null;
+      } else if (dto.unavailableReason !== undefined) {
+        data.unavailableReason = dto.unavailableReason.trim() || null;
+      }
     }
 
     const gear = await this.prisma.gearItem.update({
@@ -254,6 +284,8 @@ export class GearService {
 
     if (opts.onlyActive) {
       where.isActive = true;
+      // Provider-unavailable listings never appear in the public catalog.
+      where.availability = { not: GearAvailability.UNAVAILABLE };
     } else if (query.includeInactive === false) {
       where.isActive = true;
     }
@@ -342,13 +374,35 @@ export class GearService {
     return category?.id ?? null;
   }
 
-  private async assertCategoryExists(categoryId: string): Promise<void> {
-    const exists = await this.prisma.category.findUnique({
+  private async assertCategoryExists(
+    categoryId: string,
+  ): Promise<{ slug: string }> {
+    const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
-      select: { id: true },
+      select: { id: true, slug: true },
     });
-    if (!exists) {
+    if (!category) {
       throw new BadRequestException("دسته‌بندی انتخابی وجود ندارد");
+    }
+    return { slug: category.slug };
+  }
+
+  /** Only catalog-approved specification keys may be stored (#50). */
+  private assertSpecificationsAllowed(
+    specifications: Record<string, unknown>,
+    categorySlug: string | undefined,
+  ): void {
+    const categoryKeys = categorySlug
+      ? ALLOWED_SPEC_KEYS[categorySlug]
+      : undefined;
+    const allowed = categoryKeys?.length ? categoryKeys : ALL_SPEC_KEYS;
+    const invalid = Object.keys(specifications).find(
+      (key) => !allowed.includes(key.trim()),
+    );
+    if (invalid) {
+      throw new BadRequestException(
+        `مشخصه «${invalid}» مجاز نیست؛ از فهرست مشخصات مجاز استفاده کنید`,
+      );
     }
   }
 
