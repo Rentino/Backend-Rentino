@@ -379,7 +379,7 @@ describe("LensLoop API (e2e)", () => {
       .expect(409);
   });
 
-  it("lets the provider confirm, hand over and return an order", async () => {
+  it("lets the provider confirm and hand over an order, and the customer return it", async () => {
     await provider
       .patch(`/${API_PREFIX}/provider/orders/${firstOrderId}`)
       .send({ status: "CONFIRMED" })
@@ -418,9 +418,9 @@ describe("LensLoop API (e2e)", () => {
       .patch(`/${API_PREFIX}/provider/orders/${firstOrderId}`)
       .send({ status: "PICKED_UP" })
       .expect(200);
-    await provider
-      .patch(`/${API_PREFIX}/provider/orders/${firstOrderId}`)
-      .send({ status: "RETURNED" })
+
+    await customer
+      .patch(`/${API_PREFIX}/rentals/${firstOrderId}/return`)
       .expect(200);
   });
 

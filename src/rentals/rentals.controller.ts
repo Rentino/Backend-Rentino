@@ -62,4 +62,13 @@ export class RentalsController {
   cancel(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.rentalsService.cancelByCustomer(user.id, id);
   }
+
+  @Patch(":id/return")
+  @ResponseMessage("بازگشت کالا تأیید شد")
+  @ApiOperation({
+    summary: "Confirm the return of the current customer's picked-up order",
+  })
+  confirmReturn(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.rentalsService.returnByCustomer(user.id, id);
+  }
 }

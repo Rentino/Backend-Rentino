@@ -11,7 +11,7 @@ export type RentalActor = "CUSTOMER" | "PROVIDER" | "SYSTEM";
  *      └────── cancel ──────┘  (customer or provider)
  *
  * Payment may also settle a PLACED order directly (the customer pays before
- * the provider confirms).
+ * the provider confirms). Only the customer confirms the return.
  */
 const TRANSITIONS: Record<
   RentalStatus,
@@ -31,7 +31,7 @@ const TRANSITIONS: Record<
     PROVIDER: [RentalStatus.PICKED_UP],
   },
   PICKED_UP: {
-    PROVIDER: [RentalStatus.RETURNED],
+    CUSTOMER: [RentalStatus.RETURNED],
   },
   RETURNED: {},
   CANCELLED: {},

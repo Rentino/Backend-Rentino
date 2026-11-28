@@ -254,7 +254,7 @@ export class RentalsService {
   }
 
   // -------------------------------------------------------------------------
-  // Customer cancellation
+  // Customer cancellation + return confirmation
   // -------------------------------------------------------------------------
 
   async cancelByCustomer(
@@ -277,6 +277,40 @@ export class RentalsService {
       const updated = await tx.rentalOrder.update({
         where: { id: orderId },
         data: { status: RentalStatus.CANCELLED },
+        include: RENTAL_INCLUDE,
+      });
+
+      await recomputeAvailability(
+        tx,
+        order.items.map((item) => item.gearItemId),
+      );
+
+      return toRentalOrderDto(updated);
+    });
+  }
+
+  async returnByCustomer(
+    customerId: string,
+    orderId: string,
+  ): Promise<RentalOrderDto> {
+    return runSerializable(this.prisma, async (tx) => {
+      const order = await tx.rentalOrder.findFirst({
+        where: { id: orderId, customerId },
+        include: { items: true },
+      });
+      if (!order) {
+        throw new NotFoundException("سفارش یافت نشد");
+      }
+
+      if (!canTransition(order.status, RentalStatus.RETURNED, "CUSTOMER")) {
+        throw new ConflictException(
+          "این سفارش در وضعیت فعلی قابل تأیید بازگشت نیست",
+        );
+      }
+
+      const updated = await tx.rentalOrder.update({
+        where: { id: orderId },
+        data: { status: RentalStatus.RETURNED },
         include: RENTAL_INCLUDE,
       });
 

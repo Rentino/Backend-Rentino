@@ -34,6 +34,9 @@ describe("rental status machine", () => {
     ).toBe(true);
     expect(
       canTransition(RentalStatus.PICKED_UP, RentalStatus.RETURNED, "PROVIDER"),
+    ).toBe(false);
+    expect(
+      canTransition(RentalStatus.PICKED_UP, RentalStatus.RETURNED, "CUSTOMER"),
     ).toBe(true);
     expect(
       canTransition(RentalStatus.PAID, RentalStatus.RETURNED, "PROVIDER"),
