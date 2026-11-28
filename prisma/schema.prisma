@@ -1,4 +1,4 @@
-// LensLoop (رنتینو) — PostgreSQL schema
+// رنتینو — PostgreSQL schema
 // Money is stored as integer Rial (1 Toman = 10 Rial). Never use floats for money.
 // Rental dates are calendar-day @db.Date values; endDate is EXCLUSIVE.
 

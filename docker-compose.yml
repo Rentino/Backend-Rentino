@@ -1,4 +1,4 @@
-# Reproducible local PostgreSQL for the LensLoop backend.
+# Reproducible local PostgreSQL for the Rentino backend.
 #   docker compose up -d
 #   # then: npm run prisma:migrate && npm run seed
 #

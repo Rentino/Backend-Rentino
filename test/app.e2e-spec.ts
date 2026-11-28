@@ -1,5 +1,5 @@
 /**
- * End-to-end suite for the LensLoop API.
+ * End-to-end suite for the Rentino API.
  *
  * Runs against a dedicated `rentino_test` database (see `test/setup-env.ts`)
  * with the real Prisma schema migrated in. Every table is truncated in
@@ -43,7 +43,7 @@ function isoDay(offset: number): string {
     .slice(0, 10);
 }
 
-describe("LensLoop API (e2e)", () => {
+describe("Rentino API (e2e)", () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let categoryId: string;

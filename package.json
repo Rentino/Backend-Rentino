@@ -1,7 +1,7 @@
 {
-  "name": "lensloop-backend",
+  "name": "rentino-backend",
   "version": "1.0.0",
-  "description": "LensLoop (رنتینو) rental marketplace backend — NestJS + PostgreSQL + Prisma",
+  "description": "رنتینو rental marketplace backend — NestJS + PostgreSQL + Prisma",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

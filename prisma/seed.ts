@@ -1,5 +1,5 @@
 /**
- * LensLoop (رنتینو) demo seed.
+ * رنتینو demo seed.
  *
  * Idempotent: safe to run repeatedly. Rows are matched on natural keys
  * (email / slug) or on fixed IDs, so re-running updates instead of duplicating.

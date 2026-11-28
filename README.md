@@ -1,4 +1,4 @@
-# LensLoop (رنتینو) — backend
+# رنتینو — backend
 
 REST API for the Persian RTL rental marketplace frontend in the parent
 directory. **NestJS 11 + PostgreSQL 17 + Prisma 6 + TypeScript.**

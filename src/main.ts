@@ -51,7 +51,7 @@ async function bootstrap(): Promise<void> {
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder()
-        .setTitle("LensLoop API")
+        .setTitle("Rentino API")
         .setDescription(
           "رنتینو — REST API for the Persian rental marketplace (v1)",
         )
@@ -74,9 +74,7 @@ async function bootstrap(): Promise<void> {
 
   const port = Number(config.get<string>("PORT") ?? 8000);
   await app.listen(port);
-  logger.log(
-    `LensLoop API listening on http://localhost:${port}/${API_PREFIX}`,
-  );
+  logger.log(`Rentino API listening on http://localhost:${port}/${API_PREFIX}`);
 }
 
 void bootstrap();
